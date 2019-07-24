@@ -1,6 +1,6 @@
 {
     "name": "redux-data-module",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Easy data module for Redux",
     "author": "Francis Boisclair",
     "license": "MIT",
