@@ -42,6 +42,24 @@ export default class BaseModule {
     this.actionKeys[actionKey] = `${this.actionKeyPrefix}/${splitActionKey}`
   }
 
+  registerAction(actionKey, actionFunction) {
+    this.registerActionKey(actionKey)
+    this.actions[actionKey] = (...args) => actionFunction(...args)
+    return this.actionKeys[actionKey]
+  }
+
+  registerReducer(reducerKey, reducerFunction, extraArgsFunction) {
+    this.reducers[reducerKey] = (state, action) => {
+      let extraArgs = extraArgsFunction ? extraArgsFunction(state, action) : []
+
+      if (!Array.isArray(extraArgs)) {
+        extraArgs = [extraArgs]
+      }
+
+      return reducerFunction(state, action, ...extraArgs)
+    }
+  }
+
   _getModuleState = (state) => {
     return this.config.reducerKey.split('.').reduce((o, v) => (typeof o === 'undefined' || o === null ? o : o[v]), state) || this.initialState
   }

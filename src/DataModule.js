@@ -41,6 +41,13 @@ export default class DataModule extends BaseModule {
     }
   }
 
+  registerDataAction(actionKey, actionFunction) {
+    this.registerActionKey(`${actionKey}Start`)
+    this.registerActionKey(`${actionKey}Success`)
+    this.registerActionKey(`${actionKey}Error`)
+    this.actions[actionKey] = (...args) => actionFunction(...args)
+  }
+
   _configureSelectors = () => {
     this.registerSelector('data', (state, moduleState) => moduleState.data, data => data)
 
@@ -60,166 +67,146 @@ export default class DataModule extends BaseModule {
   }
 
   _configureGetService = () => {
-    this.registerActionKey('getStart')
-    this.registerActionKey('getSuccess')
-    this.registerActionKey('getError')
-    
-    this.actions.get = () =>
-    dispatch => {
+    this.registerDataAction('get', () => dispatch => {
       dispatch({ type: this.actionKeys.getStart })
 
       return new Promise((resolve, reject) => {
         this.config.services.get.service()
-            .then(response => {
-              dispatch({ type: this.actionKeys.getSuccess, payload: response })
-              resolve(response)
-            })
-            .catch(error => {
-              dispatch({ type: this.actionKeys.getError })
-              reject(error)
-            })
+          .then(response => {
+            dispatch({ type: this.actionKeys.getSuccess, payload: response })
+            resolve(response)
           })
-        }
-        
-    this.reducers[this.actionKeys.getStart] = (state, action) => ({
+          .catch(error => {
+            dispatch({ type: this.actionKeys.getError })
+            reject(error)
+          })
+      })
+    })
+
+    this.registerReducer(this.actionKeys.getStart, state => ({
       ...state,
       isLoading: true,
       isError: false,
-    })
+    }))
     
-    this.reducers[this.actionKeys.getSuccess] = (state, action) => ({
+    this.registerReducer(this.actionKeys.getSuccess, (state, action) => ({
       ...state,
       isLoading: false,
       isLoaded: true,
       data: action.payload,
       lastUpdated: Date.now(),
-    })
-    
-    this.reducers[this.actionKeys.getError] = (state, action) => ({
+    }))
+
+    this.registerReducer(this.actionKeys.getError, (state) => ({
       ...state,
       isLoading: false,
       isError: true,
       data: this.initialState.data,
-    })
+    }))
   }
 
   _configurePostService = () => {
-    this.registerActionKey('postStart')
-    this.registerActionKey('postSuccess')
-    this.registerActionKey('postError')
+    this.registerDataAction('post', data => dispatch => {
+      dispatch({ type: this.actionKeys.postStart })
 
-    this.actions.post = (data) =>
-      dispatch => {
-        dispatch({ type: this.actionKeys.postStart })
+      return new Promise((resolve, reject) => {
+        this.config.services.post.service(data)
+          .then(response => {
+            dispatch({ type: this.actionKeys.postSuccess, payload: response })
+            resolve(response)
+          })
+          .catch(error => {
+            dispatch({ type: this.actionKeys.postError })
+            reject(error)
+          })
+      })
+    })
 
-        return new Promise((resolve, reject) => {
-          this.config.services.post.service(data)
-            .then(response => {
-              dispatch({ type: this.actionKeys.postSuccess, payload: response })
-              resolve(response)
-            })
-            .catch(error => {
-              dispatch({ type: this.actionKeys.postError })
-              reject(error)
-            })
-        })
-      }
-
-    this.reducers[this.actionKeys.postStart] = (state) => ({
+    this.registerReducer(this.actionKeys.postStart, state => ({
       ...state,
       isModifying: true,
       isError: false,
-    })
+    }))
 
-    this.reducers[this.actionKeys.postSuccess] = (state, action) => ({
+    this.registerReducer(this.actionKeys.postSuccess, (state, action) => ({
       ...state,
       isModifying: false,
       data: this.isDataArray
         ? [...state.data, action.payload]
         : { ...state.data, [action.payload[this.config.idField]]: action.payload },
       lastUpdated: Date.now(),
-    })
+    }))
 
-    this.reducers[this.actionKeys.postError] = (state) => ({
+    this.registerReducer(this.actionKeys.postError, state => ({
       ...state,
       isModifying: false,
       isError: true,
-    })
+    }))
   }
 
   _configurePutService = () => {
-    this.registerActionKey('putStart')
-    this.registerActionKey('putSuccess')
-    this.registerActionKey('putError')
+    this.registerDataAction('put', data => dispatch => {
+      dispatch({ type: this.actionKeys.putStart })
 
-    this.actions.put = (data) =>
-      dispatch => {
-        dispatch({ type: this.actionKeys.putStart })
+      return new Promise((resolve, reject) => {
+        this.config.services.put.service(data)
+          .then(response => {
+            dispatch({ type: this.actionKeys.putSuccess, payload: response })
+            resolve(response)
+          })
+          .catch(error => {
+            dispatch({ type: this.actionKeys.putError })
+            reject(error)
+          })
+      })
+    })
 
-        return new Promise((resolve, reject) => {
-          this.config.services.put.service(data)
-            .then(response => {
-              dispatch({ type: this.actionKeys.putSuccess, payload: response })
-              resolve(response)
-            })
-            .catch(error => {
-              dispatch({ type: this.actionKeys.putError })
-              reject(error)
-            })
-        })
-      }
-
-    this.reducers[this.actionKeys.putStart] = (state) => ({
+    this.registerReducer(this.actionKeys.putStart, state => ({
       ...state,
       isModifying: true,
       isError: false,
-    })
-    
-    this.reducers[this.actionKeys.putSuccess] = (state, action) => ({
+    }))
+
+    this.registerReducer(this.actionKeys.putSuccess, (state, action) => ({
       ...state,
       isModifying: false,
       data: this.isDataArray
         ? state.data.map(d => d[this.config.idField] === action.payload.id ? action.payload : d)
         : { ...state.data, [action.payload[this.config.idField]]: action.payload },
       lastUpdated: Date.now(),
-    })
+    }))
 
-    this.reducers[this.actionKeys.putError] = (state) => ({
+    this.registerReducer(this.actionKeys.putError, (state) => ({
       ...state,
       isModifying: false,
       isError: true
-    })
+    }))
   }
 
   _configureDeleteService = () => {
-    this.registerActionKey('deleteStart')
-    this.registerActionKey('deleteSuccess')
-    this.registerActionKey('deleteError')
+    this.registerDataAction('delete', id => dispatch => {
+      dispatch({ type: this.actionKeys.deleteStart })
 
-    this.actions.delete = (id) =>
-      dispatch => {
-        dispatch({ type: this.actionKeys.deleteStart })
+      return new Promise((resolve, reject) => {
+        this.config.services.delete.service(id)
+          .then(response => {
+            dispatch({ type: this.actionKeys.deleteSuccess, payload: id })
+            resolve()
+          })
+          .catch(error => {
+            dispatch({ type: this.actionKeys.deleteError })
+            reject(error)
+          })
+      })
+    })
 
-        return new Promise((resolve, reject) => {
-          this.config.services.delete.service(id)
-            .then(response => {
-              dispatch({ type: this.actionKeys.deleteSuccess, payload: id })
-              resolve()
-            })
-            .catch(error => {
-              dispatch({ type: this.actionKeys.deleteError })
-              reject(error)
-            })
-        })
-      }
-
-    this.reducers[this.actionKeys.deleteStart] = (state) => ({
+    this.registerReducer(this.actionKeys.deleteStart, state => ({
       ...state,
       isModifying: true,
       isError: false,
-    })
+    }))
 
-    this.reducers[this.actionKeys.deleteSuccess] = (state, action) => {
+    this.registerReducer(this.actionKeys.deleteSuccess, (state, action) => {
       const data = (() => {
         if (this.isDataArray) {
           return state.data.filter(d => d[this.config.idField] !== action.payload)
@@ -236,12 +223,12 @@ export default class DataModule extends BaseModule {
         data: data,
         lastUpdated: Date.now(),
       }
-    }
+    })
 
-    this.reducers[this.actionKeys.deleteError] = (state) => ({
+    this.registerReducer(this.actionKeys.deleteError, state => ({
       ...state,
       isModifying: false,
       isError: true,
-    })
+    }))
   }
 }
