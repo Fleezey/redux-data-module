@@ -29,9 +29,9 @@ export default class BaseModule {
   registerSelector(selectorName, selectState, selector) {
     const selectStates = Array.isArray(selectState) ? selectState : [selectState]
     
-    const stateSelector = (state) => {
+    const stateSelector = (state, ...args) => {
       const moduleState = this._getModuleState(state)
-      return selectStates.map(selectStateFunc => selectStateFunc(state, moduleState))
+      return selectStates.map(selectStateFunc => selectStateFunc(state, moduleState, ...args))
     }
     
     this.selectors[selectorName] = createSelector(stateSelector, (args) => selector(...args))
