@@ -19,6 +19,7 @@ export default class DataModule extends BaseModule {
     })
 
     this.isDataArray = Array.isArray(this.initialState.data)
+    this.config.refreshTime = config.refreshTime != null ? config.refreshTime : 60000
     this.config.services = config.services
     this.config.idField = config.idField || 'id'
 
@@ -83,6 +84,25 @@ export default class DataModule extends BaseModule {
       })
     })
 
+    this.registerAction('getIfNeeded', (...args) => (dispatch, getState) => {
+      const moduleState = this._getModuleState(getState())
+      let shouldFetch = false
+
+      if (moduleState.isLoading || moduleState.isModifying) {
+        shouldFetch = false
+      } else if (!moduleState.data || (this.isDataArray && moduleState.data.length === 0)) {
+        shouldFetch = true
+      } else if ((Date.now() - moduleState.lastLoaded) >= this.config.refreshTime) {
+        shouldFetch = true
+      }
+
+      console.log('%c' + 'Should fetch:', 'background-color: #00fab9', shouldFetch)
+
+      return shouldFetch
+        ? dispatch(this.actions.get(...args))
+        : Promise.resolve()
+    })
+
     this.registerReducer(this.actionKeys.getStart, state => ({
       ...state,
       isLoading: true,
@@ -95,6 +115,7 @@ export default class DataModule extends BaseModule {
       isLoaded: true,
       data: action.payload,
       lastUpdated: Date.now(),
+      lastLoaded: Date.now(),
     }))
 
     this.registerReducer(this.actionKeys.getError, (state) => ({
