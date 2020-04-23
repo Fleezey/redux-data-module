@@ -90,13 +90,11 @@ export default class DataModule extends BaseModule {
 
       if (moduleState.isLoading || moduleState.isModifying) {
         shouldFetch = false
-      } else if (!moduleState.data || (this.isDataArray && moduleState.data.length === 0)) {
+      } else if (!moduleState.data || (this.isDataArray && moduleState.data.length === 0 && !moduleState.lastUpdated)) {
         shouldFetch = true
-      } else if ((Date.now() - moduleState.lastLoaded) >= this.config.refreshTime) {
+      } else if ((Date.now() - moduleState.lastUpdated) >= this.config.refreshTime) {
         shouldFetch = true
       }
-
-      console.log('%c' + 'Should fetch:', 'background-color: #00fab9', shouldFetch)
 
       return shouldFetch
         ? dispatch(this.actions.get(...args))
@@ -115,7 +113,6 @@ export default class DataModule extends BaseModule {
       isLoaded: true,
       data: action.payload,
       lastUpdated: Date.now(),
-      lastLoaded: Date.now(),
     }))
 
     this.registerReducer(this.actionKeys.getError, (state) => ({
