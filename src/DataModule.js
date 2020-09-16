@@ -14,7 +14,7 @@ export default class DataModule extends BaseModule {
         isError: false,
         isLoaded: false,
         lastUpdated: 0,
-        data: config.initialData || [],
+        data: config.initialData !== undefined ? config.initialData : [],
       }
     })
 
