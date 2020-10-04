@@ -230,7 +230,7 @@ export default class DataModule extends BaseModule {
           return state.data.filter(d => d[this.config.idField] !== action.payload)
         }
 
-        const values = { ...action.payload }
+        const values = { ...state.data }
         delete values[action.payload]
         return values
       })()
