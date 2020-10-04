@@ -231,7 +231,7 @@ export default class DataModule extends BaseModule {
         }
 
         const values = { ...action.payload }
-        delete values[action.payload[this.config.idField]]
+        delete values[action.payload]
         return values
       })()
 
