@@ -6,7 +6,7 @@ export default class DataModule extends BaseModule {
     super({
       moduleKey: config.moduleKey,
       reducerKey: config.reducerKey || config.moduleKey,
-  
+
       initialState: {
         ...config.initialState,
         isLoading: false,
@@ -22,6 +22,7 @@ export default class DataModule extends BaseModule {
     this.config.refreshTime = config.refreshTime != null ? config.refreshTime : 60000
     this.config.services = config.services
     this.config.idField = config.idField || 'id'
+    this.config.useIdUpdate = config.useIdUpdate
 
     this._configureSelectors()
 
@@ -106,7 +107,7 @@ export default class DataModule extends BaseModule {
       isLoading: true,
       isError: false,
     }))
-    
+
     this.registerReducer(this.actionKeys.getSuccess, (state, action) => ({
       ...state,
       isLoading: false,
@@ -146,14 +147,23 @@ export default class DataModule extends BaseModule {
       isError: false,
     }))
 
-    this.registerReducer(this.actionKeys.postSuccess, (state, action) => ({
-      ...state,
-      isModifying: false,
-      data: this.isDataArray
-        ? [...state.data, action.payload]
-        : { ...state.data, [action.payload[this.config.idField]]: action.payload },
-      lastUpdated: Date.now(),
-    }))
+    this.registerReducer(this.actionKeys.postSuccess, (state, action) => {
+      const newState = {
+        ...state,
+        isModifying: false,
+        lastUpdated: Date.now(),
+      }
+
+      if (!this.config.useIdUpdate) {
+        newState.data = action.payload
+      } else if (this.isDataArray) {
+        newState.data = [...newState.data, action.payload]
+      } else {
+        newState.data = { ...newState.data, [action.payload[this.config.idField]]: action.payload }
+      }
+
+      return newState
+    })
 
     this.registerReducer(this.actionKeys.postError, state => ({
       ...state,
@@ -184,6 +194,24 @@ export default class DataModule extends BaseModule {
       isModifying: true,
       isError: false,
     }))
+
+    this.registerReducer(this.actionKeys.putSuccess, (state, action) => {
+      const newState = {
+        ...state,
+        isModifying: false,
+        lastUpdated: Date.now(),
+      }
+
+      if (!this.config.useIdUpdate) {
+        newState.data = action.payload
+      } else if (this.isDataArray) {
+        newState.data = newState.data.map(d => d[this.config.idField] === action.payload ? action.payload : d)
+      } else {
+        newState.data = { ...newState.data, [action.payload[this.config.idField]]: action.payload }
+      }
+
+      return newState
+    })
 
     this.registerReducer(this.actionKeys.putSuccess, (state, action) => ({
       ...state,
