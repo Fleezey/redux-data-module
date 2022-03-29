@@ -205,22 +205,13 @@ export default class DataModule extends BaseModule {
       if (!this.config.useIdUpdate) {
         newState.data = action.payload
       } else if (this.isDataArray) {
-        newState.data = newState.data.map(d => d[this.config.idField] === action.payload ? action.payload : d)
+        newState.data = newState.data.map(d => d[this.config.idField] === action.payload[this.config.idField] ? action.payload : d)
       } else {
         newState.data = { ...newState.data, [action.payload[this.config.idField]]: action.payload }
       }
 
       return newState
     })
-
-    this.registerReducer(this.actionKeys.putSuccess, (state, action) => ({
-      ...state,
-      isModifying: false,
-      data: this.isDataArray
-        ? state.data.map(d => d[this.config.idField] === action.payload.id ? action.payload : d)
-        : { ...state.data, [action.payload[this.config.idField]]: action.payload },
-      lastUpdated: Date.now(),
-    }))
 
     this.registerReducer(this.actionKeys.putError, (state) => ({
       ...state,
