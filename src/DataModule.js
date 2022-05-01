@@ -30,6 +30,10 @@ export default class DataModule extends BaseModule {
       this._configureGetService()
     }
 
+    if (this.config.services.getOne) {
+      this._configureGetOneService()
+    }
+
     if (this.config.services.post) {
       this._configurePostService()
     }
@@ -117,6 +121,45 @@ export default class DataModule extends BaseModule {
     }))
 
     this.registerReducer(this.actionKeys.getError, (state) => ({
+      ...state,
+      isLoading: false,
+      isError: true,
+      data: this.initialState.data,
+    }))
+  }
+
+  _configureGetOneService = () => {
+    this.registerDataAction('getOne', id => dispatch => {
+      dispatch({ type: this.actionKeys.getOneStart })
+
+      return new Promise((resolve, reject) => {
+        this.config.services.getOne.service(id)
+          .then(response => {
+            dispatch({ type: this.actionKeys.getOneSuccess, payload: response })
+            resolve(response)
+          })
+          .catch(error => {
+            dispatch({ type: this.actionKeys.getOneError })
+            reject(error)
+          })
+      })
+    })
+
+    this.registerReducer(this.actionKeys.getOneStart, state => ({
+      ...state,
+      isLoading: true,
+      isError: false,
+    }))
+
+    this.registerReducer(this.actionKeys.getOneSuccess, (state, action) => ({
+      ...state,
+      isLoading: false,
+      isLoaded: true,
+      data: action.payload,
+      lastUpdated: Date.now(),
+    }))
+
+    this.registerReducer(this.actionKeys.getOneError, (state) => ({
       ...state,
       isLoading: false,
       isError: true,
